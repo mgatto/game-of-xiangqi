@@ -1,5 +1,4 @@
 # Author: Michael Gatto
-# Date: 2020-02-26
 # Description: Implement most of the classic chinese game of XiangQi
 
 
@@ -122,14 +121,14 @@ class Board:
 
             for j, col in enumerate(self._layout):
                 # 3 chars per makes everything aligned, and still fits a game piece's __repr__ in place of the middle char
-                if self._layout[col][k] is "":
+                if self._layout[col][k] == "":
                     print_layout += f"[{' ' * 3}]"
                 else:
                     print_layout += f"[ {self._layout[col][k]} ]"
 
             print_layout += "\n"
 
-            if k is 4:
+            if k == 4:
                 print_layout += f"   {'~' * 5 * 9}\n"
 
         print_layout += "   "
@@ -311,17 +310,17 @@ class General(Piece):
         super().__init__()
 
         self._team = team
-        self._starting_positions = [("e", 0 if team is "red" else 9)]
+        self._starting_positions = [("e", 0 if team == "red" else 9)]
 
     def __str__(self):
         """ Symbol only representation for game board viewing """
-        return "G" if self._team is "red" else "g"
+        return "G" if self._team == "red" else "g"
 
     def __repr__(self):
         """ Print out a General's representation depending on team """
-        return f"<{'G' if self._team is 'red' else 'g'} id={self._id} team={self._team} start={self._starting_positions} location={self._current_position}>"
+        return f"<{'G' if self._team == 'red' else 'g'} id={self._id} team={self._team} start={self._starting_positions} location={self._current_position}>"
 
-    def get_legal_destinations(self, game_board: Board, origin: Tuple[str, int]) -> Set[Tuple[str, int]]:
+    def get_legal_destinations(self, game_board: Board, origin: Tuple[str, int]) -> List[Tuple[str, int]]:
         """ Special method to be used in both finding legal moves as well as is_in_check
 
         :param game_board:
@@ -337,15 +336,13 @@ class General(Piece):
             (chr(ord(origin[0]) + 1), origin[1])  # move down 1
         }
 
-        legal_destinations = set()
+        legal_destinations = []
 
         # check the correct team's castle, and if an opposing piece is at the destination
         for o in opportunities:
-            # since it moves only 1 space, destination can be any point in opportunities
-            at_destination: Union[str, Piece] = game_board.get_contents_of(o)
-
-            if game_board[f"is_in_{self._team}_castle"](o) and (at_destination == "" or at_destination.get_team() != self._team):
-                legal_destinations.add(o)
+            # since it moves only 1 space, destination can be any point in opportunities on the board
+            if game_board[f"is_in_{self._team}_castle"](o):
+                legal_destinations.append(o)
 
         return legal_destinations
 
@@ -359,7 +356,12 @@ class General(Piece):
         """
 
         legal_destinations = self.get_legal_destinations(game_board, origin)
-        return destination in legal_destinations
+
+        at_destination: Union[str, Piece] = game_board.get_contents_of(destination)
+        if destination in legal_destinations and (at_destination == "" or at_destination.get_team() != self._team):
+            return True
+
+        return False
 
 
 class Advisor(Piece):
@@ -370,18 +372,18 @@ class Advisor(Piece):
 
         self._team = team
 
-        if team is "red":
+        if team == "red":
             self._starting_positions = list(itertools.product(["d", "f"], [0]))
         else:
             self._starting_positions = list(itertools.product(["d", "f"], [9]))
 
     def __str__(self):
         """ Symbol only representation for game board viewing """
-        return "A" if self._team is "red" else "a"
+        return "A" if self._team == "red" else "a"
 
     def __repr__(self):
         """ Print out an Advisor's representation depending on team """
-        return f"<{'A' if self._team is 'red' else 'a'} id={self._id} team={self._team} start={self._starting_positions} location={self._current_position}>"
+        return f"<{'A' if self._team == 'red' else 'a'} id={self._id} team={self._team} location={self._current_position}>"  #  start={self._starting_positions}
 
     def is_move_legal(self, game_board: Board, origin: Tuple[str, int], destination: Tuple[str, int]) -> bool:
         """ Determine if the desired destination is legal for this piece
@@ -404,16 +406,19 @@ class Advisor(Piece):
         # Filter the possibilities by specific conditions:
         #   * is the destination within team's castle?
         #   * is the destination not already occupied by a friendly piece?
-        legal_destinations = set()
+        legal_destinations = []
 
         # check the correct team's castle, and if an opposing piece is at the destination
         for o in opportunities:
-            # since it moves only 1 space, destination can be any point in opportunities
-            at_destination: Union[str, Piece] = game_board.get_contents_of(o)
-            if game_board[f"is_in_{self._team}_castle"](o) and (at_destination is "" or at_destination.get_team() != self._team):
-                legal_destinations.add(o)
+            # since it moves only 1 space, destination can be any point in opportunities on the board
+            if game_board[f"is_in_{self._team}_castle"](o):
+                legal_destinations.append(o)
 
-        return destination in legal_destinations
+        at_destination: Union[str, Piece] = game_board.get_contents_of(destination)
+        if destination in legal_destinations and (at_destination == "" or at_destination.get_team() != self._team):
+            return True
+
+        return False
 
 
 class Elephant(Piece):
@@ -424,18 +429,18 @@ class Elephant(Piece):
 
         self._team = team
 
-        if team is "red":
+        if team == "red":
             self._starting_positions = list(itertools.product(["c", "g"], [0]))
         else:
             self._starting_positions = list(itertools.product(["c", "g"], [9]))
 
     def __str__(self):
         """ Symbol only representation for game board viewing """
-        return "E" if self._team is "red" else "e"
+        return "E" if self._team == "red" else "e"
 
     def __repr__(self):
         """ Print out an Elephant's representation depending on team """
-        return f"<{'E' if self._team is 'red' else 'e'} id={self._id} team={self._team} start={self._starting_positions} location={self._current_position}>"
+        return f"<{'E' if self._team == 'red' else 'e'} id={self._id} team={self._team} start={self._starting_positions} location={self._current_position}>"
 
     def is_move_legal(self, game_board: Board, origin: Tuple[str, int], destination: Tuple[str, int]) -> bool:
         """ Determine if the desired destination is legal for this piece
@@ -449,8 +454,8 @@ class Elephant(Piece):
         # list of vectors of magnitude 2: sub-list of two tuples, mapping the complete list of moves diagonally.
         # if origin = ["c", 3], then opportunities = [[('b', 1), ('a', 0)], [('b', 3), ('a', 4)], [('d', 1), ('e', 0)], [('d', 3), ('e', 4)]]
         opportunities = []
-        y_s = [y for y in range(origin[1] - 2, origin[1] + 2 + 1) if y is not origin[1]]  # exclude the origin
-        x_s = [chr(x) for x in range(ord(origin[0]) - 2, ord(origin[0]) + 2 + 1) if x is not ord(origin[0])]  # exclude the origin
+        y_s = [y for y in range(origin[1] - 2, origin[1] + 2 + 1) if y !=  origin[1]]  # exclude the origin
+        x_s = [chr(x) for x in range(ord(origin[0]) - 2, ord(origin[0]) + 2 + 1) if x != ord(origin[0])]  # exclude the origin
 
         for n_s in [x_s[1::-1], x_s[2:]]:  # reversed d,e which we don't want x_s[:-3:-1]
             # first, one half of the sides
@@ -502,18 +507,18 @@ class Horse(Piece):
 
         self._team = team
 
-        if team is "red":
+        if team == "red":
             self._starting_positions = list(itertools.product(["b", "h"], [0]))
         else:
             self._starting_positions = list(itertools.product(["b", "h"], [9]))
 
     def __str__(self):
         """ Symbol only representation for game board viewing """
-        return "H" if self._team is "red" else "h"
+        return "H" if self._team == "red" else "h"
 
     def __repr__(self):
         """ Print out an Horse's representation depending on team """
-        return f"<{'H' if self._team is 'red' else 'h'} id={self._id} team={self._team} start={self._starting_positions} location={self._current_position}>"
+        return f"<{'H' if self._team == 'red' else 'h'} id={self._id} team={self._team} start={self._starting_positions} location={self._current_position}>"
 
     def is_move_legal(self, game_board: Board, origin: Tuple[str, int], destination: Tuple[str, int]) -> bool:
         """ Determine if the desired destination is legal for this piece
@@ -580,18 +585,18 @@ class Chariot(Piece):
 
         self._team = team
 
-        if team is "red":
+        if team == "red":
             self._starting_positions = list(itertools.product(["a", "i"], [0]))
         else:
             self._starting_positions = list(itertools.product(["a", "i"], [9]))
 
     def __str__(self):
         """ Symbol only representation for game board viewing """
-        return "R" if self._team is "red" else "r"
+        return "R" if self._team == "red" else "r"
 
     def __repr__(self):
         """ Print out an Elephant's representation depending on team """
-        return f"<{'R' if self._team is 'red' else 'r'} id={self._id} team={self._team} start={self._starting_positions} location={self._current_position}>"
+        return f"<{'R' if self._team == 'red' else 'r'} id={self._id} team={self._team} start={self._starting_positions} location={self._current_position}>"
 
     def is_move_legal(self, game_board: Board, origin: Tuple[str, int], destination: Tuple[str, int]) -> bool:
         """ Determine if the desired destination is legal for this piece
@@ -651,18 +656,18 @@ class Cannon(Piece):
 
         self._team = team
 
-        if team is "red":
+        if team == "red":
             self._starting_positions = list(itertools.product(["b", "h"], [2]))
         else:
             self._starting_positions = list(itertools.product(["b", "h"], [7]))
 
     def __str__(self):
         """ Symbol only representation for game board viewing """
-        return "C" if self._team is "red" else "c"
+        return "C" if self._team == "red" else "c"
 
     def __repr__(self):
         """ Print out an Elephant's representation depending on team """
-        return f"<{'C' if self._team is 'red' else 'c'} id={self._id} team={self._team} start={self._starting_positions} location={self._current_position}>"
+        return f"<{'C' if self._team == 'red' else 'c'} id={self._id} team={self._team} location={self._current_position}>"  #  start={self._starting_positions}
 
     def is_move_legal(self, game_board: Board, origin: Tuple[str, int], destination: Tuple[str, int]) -> bool:
         """ Determine if the desired destination is legal for this piece
@@ -733,7 +738,8 @@ class Soldier(Piece):
 
         self._team = team
 
-        if team is "red":
+        # self._starting_positions = list(itertools.product(["a", "c", "e", "g", "i"], [3] if team == "red" else [6]))
+        if team == "red":
             self._starting_positions = list(itertools.product(["a", "c", "e", "g", "i"], [3]))
         else:
             self._starting_positions = list(itertools.product(["a", "c", "e", "g", "i"], [6]))
@@ -743,12 +749,12 @@ class Soldier(Piece):
 
     def __str__(self):
         """ Symbol only representation for game board viewing """
-        return "S" if self._team is "red" else "s"
+        return "S" if self._team == "red" else "s"
 
     def __repr__(self):
         """ Print out an Elephant's representation depending on team """
         # start = {self._starting_positions}
-        return f"<{'S' if self._team is 'red' else 's'} id={self._id} team={self._team} location={self._current_position} across={self._has_crossed_river}>"
+        return f"<{'S' if self._team == 'red' else 's'} id={self._id} team={self._team} location={self._current_position} across={self._has_crossed_river}>"
 
     def record_crossing(self):
         """ Update the Soldier's river-crossing status; once crossed may never return """
@@ -780,14 +786,18 @@ class Soldier(Piece):
 
             opportunities.extend([left, right])
 
-        legal_destinations = set()
+        legal_destinations = []
 
         # check the correct team's castle
         for o in opportunities:
             if game_board.is_within_board(o):
-                legal_destinations.add(o)
+                legal_destinations.append(o)
 
-        return destination in legal_destinations
+        at_destination: Union[str, Piece] = game_board.get_contents_of(destination)
+        if destination in legal_destinations and (at_destination == "" or at_destination.get_team() != self._team):
+            return True
+
+        return False
 
 
 class Army:
@@ -954,7 +964,7 @@ class XiangqiGame:
             if isinstance(piece_in_movement, Soldier) and self._board.get_region_of(destination) != piece_in_movement.get_team():
                 piece_in_movement.record_crossing()
 
-            next_move_making_team: str = "black" if self._current_turn_is_for is "red" else "red"
+            next_move_making_team: str = "black" if self._current_turn_is_for == "red" else "red"
 
             # run the check on the opposing team of the one which just made the move
             if self.is_in_check(next_move_making_team):
