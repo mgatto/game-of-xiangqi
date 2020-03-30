@@ -328,12 +328,15 @@ class General(Piece):
         :return:
         """
 
+        # unpack the coordinate tuple
+        column, row = origin
+
         # a set of tuples representing legal destinations; max 4 possible moves: combo of row +-1 OR col +-1
         opportunities: Set[Tuple[str, int]] = {
-            (origin[0], origin[1] + 1),  # move right 1
-            (origin[0], origin[1] - 1),  # move left 1
-            (chr(ord(origin[0]) - 1), origin[1]),  # move up 1
-            (chr(ord(origin[0]) + 1), origin[1])  # move down 1
+            (column, row + 1),  #  move up 1
+            (column, row - 1),  # move down 1
+            (chr(ord(column) - 1), row),  # move left 1
+            (chr(ord(column) + 1), row)  # move right 1
         }
 
         legal_destinations = []
@@ -394,13 +397,16 @@ class Advisor(Piece):
         :return: {bool} True if the move is legal, False if its illegal
         """
 
-        # a set of tuples representing legal destinations; max 4 possible moves: row +-1 OR col +-1
+        # unpack the coordinate tuple
+        column, row = origin
+
+        # a set of tuples representing diagonal-only moves by 1 space; max 4 possible moves: row +-1 OR col +-1
         opportunities = {
             # offset both +- 1
-            (chr(ord(origin[0]) - 1), origin[1] + 1),  # move down and left
-            (chr(ord(origin[0]) - 1), origin[1] - 1),  # move up and left
-            (chr(ord(origin[0]) + 1), origin[1] + 1),  # move down and right
-            (chr(ord(origin[0]) + 1), origin[1] - 1)  # move up and right
+            (chr(ord(column) - 1), row + 1),  # move down and left
+            (chr(ord(column) - 1), row - 1),  # move up and left
+            (chr(ord(column) + 1), row + 1),  # move down and right
+            (chr(ord(column) + 1), row - 1)  # move up and right
         }
 
         # Filter the possibilities by specific conditions:
@@ -453,9 +459,12 @@ class Elephant(Piece):
 
         # list of vectors of magnitude 2: sub-list of two tuples, mapping the complete list of moves diagonally.
         # if origin = ["c", 3], then opportunities = [[('b', 1), ('a', 0)], [('b', 3), ('a', 4)], [('d', 1), ('e', 0)], [('d', 3), ('e', 4)]]
+
+        # unpack the coordinate tuple
+        column, row = origin
         opportunities = []
-        y_s = [y for y in range(origin[1] - 2, origin[1] + 2 + 1) if y !=  origin[1]]  # exclude the origin
-        x_s = [chr(x) for x in range(ord(origin[0]) - 2, ord(origin[0]) + 2 + 1) if x != ord(origin[0])]  # exclude the origin
+        y_s = [y for y in range(row - 2, row + 2 + 1) if y !=  row]  # exclude the origin
+        x_s = [chr(x) for x in range(ord(column) - 2, ord(column) + 2 + 1) if x != ord(column)]  # exclude the origin
 
         for n_s in [x_s[1::-1], x_s[2:]]:  # reversed d,e which we don't want x_s[:-3:-1]
             # first, one half of the sides
@@ -533,14 +542,17 @@ class Horse(Piece):
         # mapping the complete list of 1 move horizontal or vertical then 1 move diagonally.
         opportunities = []
 
+        # unpack the coordinate tuple
+        column, row = origin
+
         # note the patterns are symmetrical about an axis
         # pattern = [(h+-1, v), (h-2, v+-1)]
-        left_start = (chr(ord(origin[0]) - 1), origin[1])
-        right_start = (chr(ord(origin[0]) + 1), origin[1])
+        left_start = (chr(ord(column) - 1), row)
+        right_start = (chr(ord(column) + 1), row)
 
         # pattern = [(h, v+-1), (h+-1), v-2]
-        up_start = (origin[0], origin[1] + 1)
-        down_start = (origin[0], origin[1] - 1)
+        up_start = (column, row + 1)
+        down_start = (column, row - 1)
 
         for k, n in enumerate([1, 1]):
             left_vec = [left_start, (chr(ord(left_start[0]) - 1), int(left_start[1] + n*(-1)**(k-1)))]  # <- alternate between 1 and -1
@@ -607,14 +619,17 @@ class Chariot(Piece):
         :return: {bool} True if the move is legal, False if its illegal
         """
 
+        # unpack the coordinate tuple
+        column, row = origin
+
         # vectors of varying magnitude, depending on the move's origin: a sub-list of 1 or more tuples,
         # mapping the complete list of n positions horizontally or vertically.
-        up_vec = list(itertools.product([origin[0]], list(range(origin[1], 10))))  # endpoint is edge of board
-        down_vec = list(itertools.product([origin[0]], list(range(origin[1], -1, -1))))  # endpoint is edge of board
+        up_vec = list(itertools.product([column], list(range(row, 10))))  # endpoint is edge of board
+        down_vec = list(itertools.product([column], list(range(row, -1, -1))))  # endpoint is edge of board
 
         # chr(97) == "a"; chr(105) == "i"
-        right_vec = list(itertools.product([chr(x) for x in range(ord(origin[0]), 105 + 1)], [origin[1]]))
-        left_vec = list(itertools.product([chr(x) for x in range(ord(origin[0]), 97 - 1, -1)], [origin[1]]))
+        right_vec = list(itertools.product([chr(x) for x in range(ord(column), 105 + 1)], [row]))
+        left_vec = list(itertools.product([chr(x) for x in range(ord(column), 97 - 1, -1)], [row]))
 
         # build the list while excluding empty lists (i.e. if it goes off the board)
         opportunities = [vec for vec in [up_vec, down_vec, right_vec, left_vec] if vec and len(vec) > 1]
@@ -678,14 +693,17 @@ class Cannon(Piece):
         :return: {bool} True if the move is legal, False if its illegal
         """
 
+        # unpack the coordinate tuple
+        column, row = origin
+
         # vectors of varying magnitude, depending on the move's origin: a sub-list of 1 or more tuples,
         # mapping the complete list of n positions horizontally or vertically.
-        up_vec = list(itertools.product([origin[0]], list(range(origin[1], 10))))  # +1 for each??
-        down_vec = list(itertools.product([origin[0]], list(range(origin[1], -1, -1))))
+        up_vec = list(itertools.product([column], list(range(row, 10))))  # +1 for each??
+        down_vec = list(itertools.product([column], list(range(row, -1, -1))))
 
         # chr(97) == "a"; chr(105) == "i"
-        right_vec = list(itertools.product([chr(x) for x in range(ord(origin[0]), 105 + 1)], [origin[1]]))
-        left_vec = list(itertools.product([chr(x) for x in range(ord(origin[0]), 97 - 1, -1)], [origin[1]]))
+        right_vec = list(itertools.product([chr(x) for x in range(ord(column), 105 + 1)], [row]))
+        left_vec = list(itertools.product([chr(x) for x in range(ord(column), 97 - 1, -1)], [row]))
 
         # build the list while excluding empty lists (i.e. if it goes off the board)
         opportunities = [vec for vec in [up_vec, down_vec, right_vec, left_vec] if vec and len(vec) > 1]
@@ -772,17 +790,20 @@ class Soldier(Piece):
         # moves only 1 point forward until crossing the river
         opportunities = []
 
+        # unpack the coordinate tuple
+        column, row = origin
+
         if self._team == "red":
-            forward = (origin[0], origin[1] + 1)
+            forward = (column, row + 1)
         else:
-            forward = (origin[0], origin[1] - 1)
+            forward = (column, row - 1)
 
         opportunities.append(forward)
 
         if self._has_crossed_river:
             # add right and left moves, 1 pt (never backwards)
-            left = (chr(ord(origin[0]) - 1), origin[1])
-            right = (chr(ord(origin[0]) + 1), origin[1])
+            left = (chr(ord(column) - 1), row)
+            right = (chr(ord(column) + 1), row)
 
             opportunities.extend([left, right])
 
